@@ -1,5 +1,6 @@
 using UnityEngine;
 
+
 public class IK_Solver : MonoBehaviour
 {
     public Transform[] m_BoneList;
@@ -25,10 +26,11 @@ public class IK_Solver : MonoBehaviour
                 Quaternion rotation = Quaternion.FromToRotation(bone2Effector, bone2Target);
                 Vector3 axis = m_BoneList[j].localToWorldMatrix * Vector3.forward;
                 Debug.DrawLine(m_BoneList[j].position, m_BoneList[j].position + 10 * axis, Color.black);
-                Vector3 projected = Vector3.ProjectOnPlane(bone2Target.normalized, axis);
-                float angle = Vector3.SignedAngle(bone2Effector, projected, axis);
-                Quaternion axis_rotation = Quaternion.AngleAxis(angle, axis);
-                //m_BoneList[j].rotation = rotation * m_BoneList[j].rotation;
+                Vector3 quaternionAxis = new Vector3(rotation.x, rotation.y, rotation.z);
+                Vector3 projected = Vector3.ProjectOnPlane(quaternionAxis, axis);
+                Quaternion twist = new Quaternion(projected.x, projected.y, projected.z, rotation.w).normalized;
+                Quaternion swing = rotation * Quaternion.Inverse(twist);
+                m_BoneList[j].rotation = swing * m_BoneList[j].rotation;
             }
             if (Vector3.Distance(m_EffectorPoint.position, m_TargetPoint.position) < m_Threshold)
                 break;

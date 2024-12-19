@@ -407,10 +407,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BoneList:
-  - {fileID: 724719918}
-  - {fileID: 724719917}
-  - {fileID: 724719916}
   - {fileID: 724719915}
+  - {fileID: 724719916}
+  - {fileID: 724719917}
+  - {fileID: 724719918}
   m_EffectorPoint: {fileID: 580411103}
   m_TargetPoint: {fileID: 758948177}
   m_MaxInteration: 10
