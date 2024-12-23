@@ -9,6 +9,7 @@ public class IK_Solver : MonoBehaviour
     public int m_MaxInteration = 10;
     public float m_Threshold = 1.0f;
 
+    [SerializeField] float m_Speed;
 
     private void Update()
     {
@@ -30,7 +31,10 @@ public class IK_Solver : MonoBehaviour
                 Vector3 projected = Vector3.ProjectOnPlane(quaternionAxis, axis);
                 Quaternion twist = new Quaternion(projected.x, projected.y, projected.z, rotation.w).normalized;
                 Quaternion swing = rotation * Quaternion.Inverse(twist);
-                m_BoneList[j].rotation = swing * m_BoneList[j].rotation;
+                //m_BoneList[j].rotation = swing * m_BoneList[j].rotation;
+                m_BoneList[j].localRotation = Quaternion.Slerp(
+                    m_BoneList[j].localRotation, swing * m_BoneList[j].rotation,
+                    1 - Mathf.Exp(-m_Speed * Time.deltaTime));
             }
             if (Vector3.Distance(m_EffectorPoint.position, m_TargetPoint.position) < m_Threshold)
                 break;
