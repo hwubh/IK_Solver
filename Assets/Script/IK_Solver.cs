@@ -10,6 +10,8 @@ public class IK_Solver : MonoBehaviour
     public float m_Threshold = 1.0f;
 
     [SerializeField] float m_Speed;
+    [SerializeField] float m_MaxAngle;
+    [SerializeField] float m_MinAngle;
 
     private void Update()
     {
@@ -31,6 +33,9 @@ public class IK_Solver : MonoBehaviour
                 Vector3 projected = Vector3.ProjectOnPlane(quaternionAxis, axis);
                 Quaternion twist = new Quaternion(projected.x, projected.y, projected.z, rotation.w).normalized;
                 Quaternion swing = rotation * Quaternion.Inverse(twist);
+
+
+
                 //m_BoneList[j].rotation = swing * m_BoneList[j].rotation;
                 m_BoneList[j].localRotation = Quaternion.Slerp(
                     m_BoneList[j].localRotation, swing * m_BoneList[j].rotation,
