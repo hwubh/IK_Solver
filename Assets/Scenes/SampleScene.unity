@@ -415,6 +415,9 @@ MonoBehaviour:
   m_TargetPoint: {fileID: 758948177}
   m_MaxInteration: 10
   m_Threshold: 0.1
+  m_Speed: 1
+  m_MaxAngle: 0
+  m_MinAngle: 0
 --- !u!4 &538826902
 Transform:
   m_ObjectHideFlags: 0
@@ -547,6 +550,34 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4181697885255405442, guid: caba2f4bdd028b746a32e97c1ceaa987, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.5470307
+      objectReference: {fileID: 0}
+    - target: {fileID: 4181697885255405442, guid: caba2f4bdd028b746a32e97c1ceaa987, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.047488973
+      objectReference: {fileID: 0}
+    - target: {fileID: 4181697885255405442, guid: caba2f4bdd028b746a32e97c1ceaa987, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.08201551
+      objectReference: {fileID: 0}
+    - target: {fileID: 4181697885255405442, guid: caba2f4bdd028b746a32e97c1ceaa987, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.8317306
+      objectReference: {fileID: 0}
+    - target: {fileID: 4181697885255405442, guid: caba2f4bdd028b746a32e97c1ceaa987, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 10.859
+      objectReference: {fileID: 0}
+    - target: {fileID: 4181697885255405442, guid: caba2f4bdd028b746a32e97c1ceaa987, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -0.626
+      objectReference: {fileID: 0}
+    - target: {fileID: 4181697885255405442, guid: caba2f4bdd028b746a32e97c1ceaa987, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 113.274
+      objectReference: {fileID: 0}
     - target: {fileID: 8128668236925612103, guid: caba2f4bdd028b746a32e97c1ceaa987, type: 3}
       propertyPath: m_Name
       value: scylla
