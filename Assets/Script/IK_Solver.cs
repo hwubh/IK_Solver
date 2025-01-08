@@ -22,7 +22,7 @@ public class IK_Solver : MonoBehaviour
     {
         for (int i = 0; i < m_MaxInteration; i++) 
         {
-            for (int j = 0; j < m_BoneList.Length; j++)
+            for (int j = 3; j < m_BoneList.Length; j++)
             {
                 Vector3 bone2Effector = m_EffectorPoint.position - m_BoneList[j].position;
                 Vector3 bone2Target = m_TargetPoint.position - m_BoneList[j].position;
@@ -34,14 +34,17 @@ public class IK_Solver : MonoBehaviour
                 Quaternion twist = new Quaternion(projected.x, projected.y, projected.z, rotation.w).normalized;
                 Quaternion swing = rotation * Quaternion.Inverse(twist);
 
-                Vector3 boneDir = swing * m_BoneList[j].rotation * axis;
+                Quaternion targetRotation = swing * m_BoneList[j].rotation;
+
+                Vector3 boneDir = targetRotation * axis;
                 Vector3 parentBoneDir = m_BoneList[j - 1].rotation * axis;
                 float angle = Vector3.Angle(boneDir, parentBoneDir);
-                //Vector3 clampDir = Vector3.Slerp(boneDir, parentBoneDir, );
+                Vector3 clampDir = Vector3.Slerp(boneDir, parentBoneDir, (angle - m_MaxAngle) / angle);
 
-                //m_BoneList[j].rotation = swing * m_BoneList[j].rotation;
+                targetRotation = Quaternion.FromToRotation(boneDir, clampDir) * targetRotation;
+
                 m_BoneList[j].rotation = Quaternion.Slerp(
-                    m_BoneList[j].rotation, swing * m_BoneList[j].rotation,
+                    m_BoneList[j].rotation, targetRotation,
                     1 - Mathf.Exp(-m_Speed * Time.deltaTime));
             }
             if (Vector3.Distance(m_EffectorPoint.position, m_TargetPoint.position) < m_Threshold)

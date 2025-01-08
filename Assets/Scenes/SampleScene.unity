@@ -416,7 +416,7 @@ MonoBehaviour:
   m_MaxInteration: 10
   m_Threshold: 0.1
   m_Speed: 1
-  m_MaxAngle: 0
+  m_MaxAngle: 180
   m_MinAngle: 0
 --- !u!4 &538826902
 Transform:
