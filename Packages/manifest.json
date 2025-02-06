@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.unity.ai.navigation": "2.0.5",
     "com.unity.cloud.gltfast": "6.0.1",
     "com.unity.collab-proxy": "2.5.2",
     "com.unity.feature.characters-animation": "1.0.0",
@@ -8,8 +7,10 @@
     "com.unity.ide.visualstudio": "2.0.22",
     "com.unity.inputsystem": "1.11.2",
     "com.unity.multiplayer.center": "1.0.0",
+    "com.unity.path-tracing": "1.0.0",
     "com.unity.render-pipelines.high-definition": "17.0.3",
     "com.unity.render-pipelines.universal": "17.0.3",
+    "com.unity.rendering.light-transport": "1.0.1",
     "com.unity.test-framework": "1.4.5",
     "com.unity.timeline": "1.8.7",
     "com.unity.ugui": "2.0.0",

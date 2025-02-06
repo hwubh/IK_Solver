@@ -1,0 +1,72 @@
+#define UNIFIED_RT_GROUP_SIZE_X 64
+#define UNIFIED_RT_GROUP_SIZE_Y 1
+#define UNIFIED_RT_RAYGEN_FUNC_NAME AccumulateInternal
+
+#include "Packages/com.unity.rendering.light-transport/Runtime/UnifiedRayTracing/FetchGeometry.hlsl"
+#include "Packages/com.unity.rendering.light-transport/Runtime/UnifiedRayTracing/TraceRay.hlsl"
+#include "PathTracingRandom.hlsl"
+#include "StochasticLightmapSampling.hlsl"
+
+UNIFIED_RT_DECLARE_ACCEL_STRUCT(g_UVAccelStruct);
+int g_StochasticAntialiasing;
+float g_ExplicitSampleOffsetX;
+float g_ExplicitSampleOffsetY;
+int g_AASampleOffset; // index of the anti aliasing sample [0 - N], N is the total number of antialiasing samples to take
+int g_InstanceOffsetX;
+int g_InstanceOffsetY;
+int g_InstanceWidth;
+int g_InstanceHeight;
+float g_InstanceWidthScale;
+float g_InstanceHeightScale;
+int g_ChunkOffsetX;
+int g_ChunkOffsetY;
+int g_ChunkSize;
+Texture2D<half2> g_UvFallback;
+RWStructuredBuffer<HitEntry> g_GBuffer;
+
+float2 JitterSample(float2 sample, float2 random01, float jitterAmount)
+{
+    const float2 jitteredSample = sample + jitterAmount * (random01 - 0.5f);
+    return saturate(jitteredSample);
+}
+
+void AccumulateInternal(UnifiedRT::DispatchInfo dispatchInfo)
+{
+    // The dispatch domain is [0; g_ChunkSize-1] in X
+    const uint linearChunkOffset = g_ChunkOffsetX + g_ChunkOffsetY * g_InstanceWidth;
+    const uint linearDispatch = linearChunkOffset + dispatchInfo.dispatchThreadID.x;
+    if (linearDispatch >= (uint)g_InstanceWidth * (uint)g_InstanceHeight)
+        return;
+    const uint gbufferIndex = dispatchInfo.dispatchThreadID.x;// linearDispatch - linearChunkOffset; // 0-based index relative to the chunk
+    const uint2 instanceTexelPos = uint2(linearDispatch % g_InstanceWidth, linearDispatch / g_InstanceWidth);
+    const uint2 lightmapTexelPos = uint2(g_InstanceOffsetX, g_InstanceOffsetY) + instanceTexelPos;
+    const float2 instanceSize = float2(g_InstanceWidth, g_InstanceHeight);
+
+    if (g_UvFallback[instanceTexelPos].x < 0)
+    {
+        g_GBuffer[gbufferIndex].instanceID = -1; // record no intersection
+        return;
+    }
+
+    UnifiedRT::RayTracingAccelStruct uvAccelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(g_UVAccelStruct);
+
+    PathTracingSampler rngState;
+    rngState.Init(lightmapTexelPos, g_AASampleOffset);
+
+     // select a random point in the texel
+    const float2 random01 = float2(rngState.GetFloatSample(RAND_DIM_AA_X), rngState.GetFloatSample(RAND_DIM_AA_Y));
+    const float2 texelSample = g_StochasticAntialiasing == 1 ? random01 : JitterSample(float2(g_ExplicitSampleOffsetX, g_ExplicitSampleOffsetY), random01, 0.00001f); // the jitter is to avoid issues with raytracing watertightness
+    const float2 instanceScale = float2(g_InstanceWidthScale, g_InstanceHeightScale);
+    const UnifiedRT::Hit hit = LightmapSampleTexelOffset(instanceTexelPos, texelSample, instanceSize, instanceScale, dispatchInfo, uvAccelStruct, g_UvFallback[instanceTexelPos]);
+
+    if (!hit.IsValid())
+    {
+        // no intersection found
+        g_GBuffer[gbufferIndex].instanceID = -1;
+        return;
+    }
+    g_GBuffer[gbufferIndex].instanceID = hit.instanceID;
+    g_GBuffer[gbufferIndex].primitiveIndex = hit.primitiveIndex;
+    g_GBuffer[gbufferIndex].barycentrics = hit.uvBarycentrics;
+}
+

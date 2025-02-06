@@ -29,6 +29,8 @@ public class IK_Solver : MonoBehaviour
                 Quaternion rotation = Quaternion.FromToRotation(bone2Effector, bone2Target);
                 Vector3 axis = m_BoneList[j].localToWorldMatrix * Vector3.forward;
                 Debug.DrawLine(m_BoneList[j].position, m_BoneList[j].position + 10 * axis, Color.black);
+
+                // 固定在一个方向上旋转
                 Vector3 quaternionAxis = new Vector3(rotation.x, rotation.y, rotation.z);
                 Vector3 projected = Vector3.ProjectOnPlane(quaternionAxis, axis);
                 Quaternion twist = new Quaternion(projected.x, projected.y, projected.z, rotation.w).normalized;
@@ -36,12 +38,22 @@ public class IK_Solver : MonoBehaviour
 
                 Quaternion targetRotation = swing * m_BoneList[j].rotation;
 
-                Vector3 boneDir = targetRotation * axis;
-                Vector3 parentBoneDir = m_BoneList[j - 1].rotation * axis;
+                // 角度控制
+                Vector3 boneDir = targetRotation * Vector3.right;
+                Vector3 parentBoneDir = m_BoneList[j].parent.rotation * Vector3.right;
                 float angle = Vector3.Angle(boneDir, parentBoneDir);
                 Vector3 clampDir = Vector3.Slerp(boneDir, parentBoneDir, (angle - m_MaxAngle) / angle);
 
+                Debug.DrawLine(m_BoneList[j].position, m_BoneList[j].position + 10 * boneDir, Color.red);
+                Debug.DrawLine(m_BoneList[j].position, m_BoneList[j].position + 10 * parentBoneDir, Color.yellow);
+
                 targetRotation = Quaternion.FromToRotation(boneDir, clampDir) * targetRotation;
+
+                //矫正误差
+                Matrix4x4 newLocalToWorldMatrix = Matrix4x4.TRS(m_BoneList[j].position, targetRotation, m_BoneList[j].lossyScale);
+                Vector3 newAxis = newLocalToWorldMatrix * Vector3.forward;
+                Quaternion offset = Quaternion.FromToRotation(newAxis, axis);
+                targetRotation = offset * targetRotation;
 
                 m_BoneList[j].rotation = Quaternion.Slerp(
                     m_BoneList[j].rotation, targetRotation,

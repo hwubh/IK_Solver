@@ -1,0 +1,61 @@
+#define UNIFIED_RT_GROUP_SIZE_X 128
+#define UNIFIED_RT_GROUP_SIZE_Y 1
+#define UNIFIED_RT_RAYGEN_FUNC_NAME IntegrateIndirectRadiance
+
+#include "Packages/com.unity.rendering.light-transport/Runtime/UnifiedRayTracing/FetchGeometry.hlsl"
+#include "Packages/com.unity.rendering.light-transport/Runtime/UnifiedRayTracing/TraceRay.hlsl"
+
+#include "PathTracing.hlsl"
+#include "SphericalHarmonicsUtils.hlsl"
+
+RWStructuredBuffer<float3> g_Positions;
+RWStructuredBuffer<float> g_RadianceShl2;
+uint g_PositionsOffset;
+uint g_SampleOffset;
+uint g_SampleCount;
+
+void IntegrateIndirectRadiance(UnifiedRT::DispatchInfo dispatchInfo)
+{
+    const uint threadIdx = dispatchInfo.dispatchThreadID.x;
+    const uint inProbeIdx = threadIdx / g_SampleCount + g_PositionsOffset;
+    const uint inProbeSampleIdx = threadIdx % g_SampleCount;
+    const uint outProbeIdx = threadIdx;
+
+    PathTracingSampler rngState;
+    rngState.Init(uint2(inProbeIdx, 0), g_SampleOffset + inProbeSampleIdx); // TODO(pema.malling): Make 1D version of scrambling. https://jira.unity3d.com/browse/LIGHT-1686
+
+    // TODO(pema.malling): This works but that is sort of by accident. Avoid coupling to AA (which is unrelated to probe integration). https://jira.unity3d.com/browse/LIGHT-1687
+    const float3 uniformSphereDir = MapSquareToSphere(float2(rngState.GetFloatSample(RAND_DIM_AA_X), rngState.GetFloatSample(RAND_DIM_AA_Y)));
+
+    UnifiedRT::Ray ray;
+    ray.origin = g_Positions[inProbeIdx];
+    ray.direction = uniformSphereDir;
+    ray.tMin = 0;
+    ray.tMax = K_T_MAX;
+
+    float3 radiance = EstimateRadiance(dispatchInfo, ray, rngState);
+
+    // Local array to accumulate radiance into, using SoA layout.
+    float3 accumulatedRadianceSH[SH_COEFFICIENTS_PER_CHANNEL];
+    accumulatedRadianceSH[0] = radiance * SHL0();
+    accumulatedRadianceSH[1] = radiance * SHL1_1(uniformSphereDir);
+    accumulatedRadianceSH[2] = radiance * SHL10(uniformSphereDir);
+    accumulatedRadianceSH[3] = radiance * SHL11(uniformSphereDir);
+
+    accumulatedRadianceSH[4] = radiance * SHL2_2(uniformSphereDir);
+    accumulatedRadianceSH[5] = radiance * SHL2_1(uniformSphereDir);
+    accumulatedRadianceSH[6] = radiance * SHL20(uniformSphereDir);
+    accumulatedRadianceSH[7] = radiance * SHL21(uniformSphereDir);
+    accumulatedRadianceSH[8] = radiance * SHL22(uniformSphereDir);
+
+    const float reciprocalSampleCount = 1.0f / (float) g_SampleCount;
+    const float reciprocalUniformSphereDensity = 4.0f * PI;
+    const float monteCarloNormalization = reciprocalSampleCount * reciprocalUniformSphereDensity;
+    for (uint channel = 0; channel < SH_COLOR_CHANNELS; ++channel)
+    {
+        for (uint i = 0; i < SH_COEFFICIENTS_PER_CHANNEL; ++i)
+        {
+            g_RadianceShl2[SHIndex(outProbeIdx, channel, i)] = accumulatedRadianceSH[i][channel] * monteCarloNormalization;
+        }
+    }
+}

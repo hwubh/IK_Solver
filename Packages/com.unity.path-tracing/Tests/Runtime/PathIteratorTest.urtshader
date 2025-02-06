@@ -1,0 +1,70 @@
+#define UNIFIED_RT_GROUP_SIZE_X 16
+#define UNIFIED_RT_GROUP_SIZE_Y 8
+#define UNIFIED_RT_RAYGEN_FUNC_NAME TestRadianceEstimation
+
+#include "Packages/com.unity.rendering.light-transport/Runtime/UnifiedRayTracing/FetchGeometry.hlsl"
+#include "Packages/com.unity.rendering.light-transport/Runtime/UnifiedRayTracing/TraceRay.hlsl"
+#include "Packages/com.unity.path-tracing/Runtime/Shaders/PathTracing.hlsl"
+
+uint g_SampleCount;
+
+struct TestRay
+{
+    float3 origin;
+    float3 direction;
+};
+
+StructuredBuffer<TestRay> _InputRay;
+RWStructuredBuffer<float3> _Output;
+
+float3 EstimateIncomingRadiance(UnifiedRT::DispatchInfo dispatchInfo, float3 rayOrigin, float3 rayDirection, uint sampleCount, uint bounceCount, UnifiedRT::RayTracingAccelStruct accelStruct)
+{
+    PathTracingSampler rngState;
+    rngState.Init(uint2(0, 0), 0);
+
+    PathIterator pathIter;
+    float3 sampleSum = 0;
+    for (uint sampleIdx = 0; sampleIdx < sampleCount; ++sampleIdx)
+    {
+        UnifiedRT::Ray ray;
+        ray.origin = rayOrigin;
+        ray.direction = rayDirection;
+        ray.tMin = 0;
+        ray.tMax = FLT_INF;
+        InitPathIterator(pathIter, ray);
+
+        int transparencyBounce = 0;
+        const int maxTransparencyBounces = 6;
+        for (uint bounceIndex = 0; bounceIndex <= bounceCount && transparencyBounce < maxTransparencyBounces; bounceIndex++)
+        {
+            uint traceResult = TraceBounceRayAndEvalDirectIllumination(pathIter, bounceIndex, RayMask(bounceIndex == 0), ShadowRayMask(), dispatchInfo, accelStruct, rngState);
+
+            if (traceResult == TRACE_MISS)
+            {
+                break;
+            }
+            if (traceResult == TRACE_TRANSMISSION)
+            {
+                bounceIndex--;
+                transparencyBounce++;
+                continue;
+            }
+
+            if (!Scatter(pathIter, rngState))
+                break;
+
+            rngState.NextBounce();
+        }
+
+        sampleSum += pathIter.radianceSample;
+    }
+
+    return sampleSum / float(sampleCount);
+}
+
+void TestRadianceEstimation(UnifiedRT::DispatchInfo dispatchInfo)
+{
+    UnifiedRT::RayTracingAccelStruct accelStruct = UNIFIED_RT_GET_ACCEL_STRUCT(g_SceneAccelStruct);
+    TestRay ray = _InputRay[0];
+    _Output[0] = EstimateIncomingRadiance(dispatchInfo, ray.origin, ray.direction, g_SampleCount, g_BounceCount, accelStruct);
+}
