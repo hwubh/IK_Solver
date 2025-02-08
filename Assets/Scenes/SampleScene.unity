@@ -626,11 +626,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_RootGameObjects:
   - {fileID: 2084960738}
-  - {fileID: 566797880}
-  - {fileID: 1677709854}
-  - {fileID: 1100434156}
-  - {fileID: 596630520}
-  - {fileID: 1000291652}
   m_MaxInteration: 10
   m_Threshold: 0.1
   m_Speed: 1

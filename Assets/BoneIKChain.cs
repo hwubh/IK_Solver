@@ -8,7 +8,7 @@ public class BoneIKChain : MonoBehaviour
     internal Transform m_EffectorPoint;
     public Transform m_TargetPoint;
 
-    void Start()
+    void OnEnable()
     {
         var go = this.gameObject;
         while (go && go.GetComponent<BoneProperty>())
