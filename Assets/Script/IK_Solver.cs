@@ -177,40 +177,63 @@ public class IK_Solver : MonoBehaviour
             return;
 
         // 开始迭代
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 1; i++)
         {
             Quaternion rotation = Quaternion.identity;
 
             // 逆向遍历: 更新各个关节的空间位置
             bonesPosition[BonesListSize] = m_TargetPoint.position;
-            Vector3 normalizedEndToStart = (bonesPosition[BonesListSize - 1] - bonesPosition[BonesListSize]).normalized;
-            bonesPosition[BonesListSize - 1] = bonesPosition[BonesListSize] + bonesLength[BonesListSize - 1] * normalizedEndToStart;
+            Vector3 normalizedEndToStart = Vector3.one;
+            //Vector3 normalizedEndToStart = (bonesPosition[BonesListSize - 1] - bonesPosition[BonesListSize]).normalized;
+            //bonesPosition[BonesListSize - 1] = bonesPosition[BonesListSize] + bonesLength[BonesListSize - 1] * normalizedEndToStart;
+
+            bool isSkip = false;
+            bool test = true;
+
             for (int j = BonesListSize - 1; j > 0; j--) 
             {
                 // 根据角度限制，规划当前迭代的骨骼信息。
                 // 如果存在target目标超出了该关节的最大角度，则将该关节与其父关节一起处理。
-                //if (isOverMaxAngle(m_BoneList[j], m_BoneList[j - 1]))
-                //{
-                //    continue;
-                //}
+                isSkip = isSkip ? isSkip : !isOverMaxAngle(m_BoneList[j], m_BoneList[j - 1]);
+                if (!isSkip)
+                {
+                    if (j == BonesListSize - 1) 
+                    {
+                        bonesPosition[j] = bonesPosition[j + 1] - m_BoneList[j].transform.rotation * m_EffectorPoint.localPosition;
+                        continue;
+                    }
+                    bonesPosition[j] = bonesPosition[j + 1] + m_BoneList[j].transform.rotation * m_BoneList[j + 1].transform.localPosition;
+                    continue;
+                }
+                if (test) 
+                {
+                    normalizedEndToStart = (bonesPosition[j] - m_TargetPoint.position).normalized;
+                    bonesPosition[j] = m_TargetPoint.position + (bonesPosition[j] - m_EffectorPoint.position).magnitude * normalizedEndToStart;
+                    test = false;
+                    continue;
+                }
                 normalizedEndToStart = (bonesPosition[j] - bonesPosition[j + 1]).normalized;
                 bonesPosition[j] = bonesPosition[j + 1] + bonesLength[j] * normalizedEndToStart;
             }
 
             // 正向遍历: 调整各个关节的相对位置(保持关节长度不变)
-            Vector3 normalizedStartToEnd = Vector3.zero;
-            for (int j = 0; j < BonesListSize - 1; j++)
-            {
-                normalizedStartToEnd = (bonesPosition[j + 1] - bonesPosition[j]).normalized;
-                bonesPosition[j + 1] = bonesPosition[j] + bonesLength[j] * normalizedStartToEnd;
-            }
-            normalizedStartToEnd = (bonesPosition[BonesListSize] - bonesPosition[BonesListSize - 1]).normalized;
-            bonesPosition[BonesListSize] = bonesPosition[BonesListSize - 1] + bonesLength[BonesListSize - 1] * normalizedStartToEnd;
+            //Vector3 normalizedStartToEnd = Vector3.zero;
+            //for (int j = 0; j < BonesListSize - 1; j++)
+            //{
+            //    normalizedStartToEnd = (bonesPosition[j + 1] - bonesPosition[j]).normalized;
+            //    bonesPosition[j + 1] = bonesPosition[j] + bonesLength[j] * normalizedStartToEnd;
+            //}
+            //normalizedStartToEnd = (bonesPosition[BonesListSize] - bonesPosition[BonesListSize - 1]).normalized;
+            //bonesPosition[BonesListSize] = bonesPosition[BonesListSize - 1] + bonesLength[BonesListSize - 1] * normalizedStartToEnd;
 
             // 调整关节朝向
             for (int j = 0; j < BonesListSize; j++)
             {
-                Debug.DrawLine(bonesPosition[j], bonesPosition[j + 1], Color.black);
+                //Debug.DrawLine(bonesPosition[j], bonesPosition[j + 1], Color.black);
+                Debug.DrawLine(bonesPosition[BonesListSize - 1], bonesPosition[BonesListSize], Color.red);
+                Debug.DrawLine(bonesPosition[BonesListSize - 1 - 1], bonesPosition[BonesListSize - 1], Color.yellow);
+                Debug.DrawLine(bonesPosition[BonesListSize - 1 - 1 - 1], bonesPosition[BonesListSize - 1 - 1], Color.blue);
+                Debug.DrawLine(bonesPosition[BonesListSize - 1 - 1 - 1 - 1], bonesPosition[BonesListSize - 1 - 1 - 1], Color.green);
             }
 
             //for (int j = 0; j < BonesListSize; j++) 

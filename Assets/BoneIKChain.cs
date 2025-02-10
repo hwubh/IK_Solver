@@ -10,6 +10,8 @@ public class BoneIKChain : MonoBehaviour
 
     void OnEnable()
     {
+        m_Bones.Clear();
+
         var go = this.gameObject;
         while (go && go.GetComponent<BoneProperty>())
         {
