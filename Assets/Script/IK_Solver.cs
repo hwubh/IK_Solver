@@ -138,14 +138,13 @@ public class IK_Solver : MonoBehaviour
         }
     }
 
-    bool isOverMaxAngle(BoneProperty endBone, BoneProperty startBone) 
+    bool isOverMaxAngle(Vector3 endBone, Vector3 startBone, Vector3 targetBone, Vector3 axis, float m_MaxAngle) 
     {
-        Vector3 endToTarget = m_TargetPoint.position - endBone.transform.position;
-        Vector3 startToEnd = endBone.transform.position - startBone.transform.position;
-        Vector3 axis = endBone.transform.localToWorldMatrix * endBone.m_Axis;
+        Vector3 endToTarget = targetBone - endBone;
+        Vector3 startToEnd = endBone - startBone;
         float angle = Vector3.SignedAngle(endToTarget, startToEnd, axis);
 
-        return angle > 180 - endBone.m_MaxAngle;
+        return angle > 180 - m_MaxAngle;
     }
 
     void FABRIK() 
@@ -194,7 +193,7 @@ public class IK_Solver : MonoBehaviour
             {
                 // 根据角度限制，规划当前迭代的骨骼信息。
                 // 如果存在target目标超出了该关节的最大角度，则将该关节与其父关节一起处理。
-                isSkip = isSkip ? isSkip : !isOverMaxAngle(m_BoneList[j], m_BoneList[j - 1]);
+                isSkip = isSkip ? isSkip : !isOverMaxAngle(bonesPosition[j], bonesPosition[j - 1], bonesPosition[j + 1], m_BoneList[j].transform.localToWorldMatrix * m_BoneList[j].m_Axis, m_BoneList[j].m_MaxAngle);
                 if (!isSkip)
                 {
                     if (j == BonesListSize - 1) 
