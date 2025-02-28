@@ -201,7 +201,7 @@ public class IK_Solver : MonoBehaviour
                         bonesPosition[j] = bonesPosition[j + 1] - m_BoneList[j].transform.rotation * m_EffectorPoint.localPosition;
                         continue;
                     }
-                    bonesPosition[j] = bonesPosition[j + 1] + m_BoneList[j].transform.rotation * m_BoneList[j + 1].transform.localPosition;
+                    bonesPosition[j] = bonesPosition[j + 1] - m_BoneList[j].transform.rotation * m_BoneList[j + 1].transform.localPosition;
                     continue;
                 }
                 if (test) 
@@ -235,49 +235,49 @@ public class IK_Solver : MonoBehaviour
                 Debug.DrawLine(bonesPosition[BonesListSize - 1 - 1 - 1 - 1], bonesPosition[BonesListSize - 1 - 1 - 1], Color.green);
             }
 
-            //for (int j = 0; j < BonesListSize; j++) 
-            //{
-            //    var boneTransform = m_BoneList[j].m_Transform;
+            for (int j = 0; j < BonesListSize; j++)
+            {
+                var boneTransform = m_BoneList[j].m_Transform;
 
-            //    rotation = Quaternion.FromToRotation(m_BoneList[j].transform.localToWorldMatrix * Vector3.left, bonesPosition[j + 1] - bonesPosition[j]);
-            //    //m_BoneList[j].transform.rotation = rotation * m_BoneList[j].transform.rotation;
+                rotation = Quaternion.FromToRotation(m_BoneList[j].transform.localToWorldMatrix * Vector3.left, bonesPosition[j + 1] - bonesPosition[j]);
+                //m_BoneList[j].transform.rotation = rotation * m_BoneList[j].transform.rotation;
 
-            //    // 固定在一个方向上旋转
-            //    Vector3 axis = boneTransform.localToWorldMatrix * m_BoneList[j].m_Axis;
-            //    //Debug.DrawLine(boneTransform.position, boneTransform.position + 10 * axis, Color.black);
-            //    Vector3 quaternionAxis = new Vector3(rotation.x, rotation.y, rotation.z);
-            //    Vector3 projected = Vector3.ProjectOnPlane(quaternionAxis, axis);
-            //    Quaternion twist = new Quaternion(projected.x, projected.y, projected.z, rotation.w).normalized;
-            //    Quaternion swing = rotation * Quaternion.Inverse(twist);
+                // 固定在一个方向上旋转
+                Vector3 axis = boneTransform.localToWorldMatrix * m_BoneList[j].m_Axis;
+                //Debug.DrawLine(boneTransform.position, boneTransform.position + 10 * axis, Color.black);
+                Vector3 quaternionAxis = new Vector3(rotation.x, rotation.y, rotation.z);
+                Vector3 projected = Vector3.ProjectOnPlane(quaternionAxis, axis);
+                Quaternion twist = new Quaternion(projected.x, projected.y, projected.z, rotation.w).normalized;
+                Quaternion swing = rotation * Quaternion.Inverse(twist);
 
-            //    Quaternion targetRotation = swing * boneTransform.rotation;
+                Quaternion targetRotation = swing * boneTransform.rotation;
 
-            //    //矫正误差
-            //    Matrix4x4 newLocalToWorldMatrix = Matrix4x4.TRS(boneTransform.position, targetRotation, boneTransform.lossyScale);
-            //    Vector3 newAxis = newLocalToWorldMatrix * m_BoneList[j].m_Axis;
-            //    Quaternion offset = Quaternion.FromToRotation(newAxis, axis);
-            //    targetRotation = offset * targetRotation;
+                //矫正误差
+                Matrix4x4 newLocalToWorldMatrix = Matrix4x4.TRS(boneTransform.position, targetRotation, boneTransform.lossyScale);
+                Vector3 newAxis = newLocalToWorldMatrix * m_BoneList[j].m_Axis;
+                Quaternion offset = Quaternion.FromToRotation(newAxis, axis);
+                targetRotation = offset * targetRotation;
 
-            //    //boneTransform.rotation = targetRotation;
+                //boneTransform.rotation = targetRotation;
 
-            //    boneTransform.rotation = Quaternion.Slerp(
-            //        boneTransform.rotation, targetRotation,
-            //        1 - Mathf.Exp(-m_Speed * Time.deltaTime));
+                boneTransform.rotation = Quaternion.Slerp(
+                    boneTransform.rotation, targetRotation,
+                    1 - Mathf.Exp(-m_Speed * Time.deltaTime));
 
-            //    // 角度控制
-            //    Vector3 boneDir = (boneTransform.rotation * Vector3.right).normalized;
-            //    Vector3 parentBoneDir = (boneTransform.parent.rotation * Vector3.right).normalized;
-            //    float angle = Vector3.SignedAngle(parentBoneDir, boneDir, axis);
-            //    float lerpAngle = (angle - m_BoneList[j].m_MaxAngle) / angle;
-            //    Vector3 clampDir = Vector3.Slerp(boneDir, parentBoneDir, lerpAngle);
+                // 角度控制
+                Vector3 boneDir = (boneTransform.rotation * Vector3.right).normalized;
+                Vector3 parentBoneDir = (boneTransform.parent.rotation * Vector3.right).normalized;
+                float angle = Vector3.SignedAngle(parentBoneDir, boneDir, axis);
+                float lerpAngle = (angle - m_BoneList[j].m_MaxAngle) / angle;
+                Vector3 clampDir = Vector3.Slerp(boneDir, parentBoneDir, lerpAngle);
 
-            //    //Debug.DrawLine(boneTransform.position, boneTransform.position + 10 * boneDir, Color.red);
-            //    //Debug.DrawLine(boneTransform.position, boneTransform.position + 10 * parentBoneDir, Color.yellow);
-            //    //Debug.DrawLine(boneTransform.position, boneTransform.position + 10 * clampDir, Color.green);
+                //Debug.DrawLine(boneTransform.position, boneTransform.position + 10 * boneDir, Color.red);
+                //Debug.DrawLine(boneTransform.position, boneTransform.position + 10 * parentBoneDir, Color.yellow);
+                //Debug.DrawLine(boneTransform.position, boneTransform.position + 10 * clampDir, Color.green);
 
-            //    boneTransform.rotation = Quaternion.FromToRotation(boneDir, clampDir) * boneTransform.rotation;
+                boneTransform.rotation = Quaternion.FromToRotation(boneDir, clampDir) * boneTransform.rotation;
 
-            //}
+            }
 
             if (Vector3.Distance(m_EffectorPoint.position, m_TargetPoint.position) < 0.01f)
                 break;
